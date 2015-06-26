@@ -14,8 +14,17 @@ install _ todo = do
 pass :: ModGuts -> CoreM ModGuts
 pass guts = do dflags <- getDynFlags
                bindsOnlyPass (mapM (printBind dflags)) guts
-  where printBind :: DynFlags -> CoreBind -> CoreM CoreBind
-        printBind dflags bndr@(NonRec b _) = do
-          putMsgS $ "Non-recursive binding named " ++ showSDoc dflags (ppr b)
-          return bndr
-        printBind _ bndr = return bndr
+
+printBind :: DynFlags -> CoreBind -> CoreM CoreBind
+printBind dflags bndr@(NonRec name expr) = do
+  printExpr dflags "Non-recursive" (name, expr)
+  return bndr
+printBind dflags bndr@(Rec bs) = do
+  mapM (printExpr dflags "Recursive") bs
+  return bndr
+
+printExpr :: DynFlags -> String -> (CoreBndr, Expr CoreBndr) -> CoreM ()
+printExpr dflags str (name, expr) = do
+  let name' = getUnique name
+  putMsgS $ str ++ " binding named " ++ showSDoc dflags (ppr name')
+  return ()

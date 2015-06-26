@@ -1,10 +1,11 @@
 #!/bin/sh
 
-OUTER=$(dirname "$0")
+REL=$(dirname "$0")
+ABS=$(readlink -f "$REL")
 DIR=$(mktemp -d)
 (cd "$DIR"
  cabal get "$@"
  cd *
- "$OUTER/dump-package.sh")
+ "$ABS/dump-package.sh")
 
 rm -rf "$DIR"
