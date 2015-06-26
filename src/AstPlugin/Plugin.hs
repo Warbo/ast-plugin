@@ -1,5 +1,6 @@
 module AstPlugin.Plugin (plugin) where
 import GhcPlugins
+import HS2AST.Sexpr
 
 plugin :: Plugin
 plugin = defaultPlugin {
@@ -25,6 +26,11 @@ printBind dflags bndr@(Rec bs) = do
 
 printExpr :: DynFlags -> String -> (CoreBndr, Expr CoreBndr) -> CoreM ()
 printExpr dflags str (name, expr) = do
-  let name' = getUnique name
-  putMsgS $ str ++ " binding named " ++ showSDoc dflags (ppr name')
+  case simpleAst expr of
+       Nothing  -> return ()
+       Just ast -> putMsgS $ concat [
+         "FOUNDAST ",
+         showSDoc dflags (ppr name),
+         " ",
+         show ast]
   return ()
