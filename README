@@ -1,0 +1,93 @@
+# Dump Haskell ASTs #
+
+This project provides a plugin for the Glasgow Haskell Compiler (GHC) which
+dumps out Abstract Syntax Trees (ASTs) of Haskell code to stdout.
+
+To get these ASTs, we want to use GHC because it has features like "dependency
+chasing", unique renaming, support for CPP, TemplateHaskell, etc. and it works
+for pretty much all Haskell code ever written (simply because most Haskell
+programmers don't target anything else). Other approaches, eg. standalone
+parsers like haskell-src-exts, would require us to re-implement a lot of these
+features ourselves.
+
+There are many ways to use GHC:
+
+ - The simplest is to provide commandline arguments to dump out the intermediate
+   representations (IR), yet we would still have to parse this output in order
+   to do anything useful with it.
+ - We can use the GHC API to parse, rename, typecheck, etc. any Haskell code we
+   provide it. However, this leads to "dependency hell", where we have to set up
+   all of the required packages, include directories, etc. We would basically
+   end up re-implementing Cabal.
+ - We can write a GHC plugin, then tell Cabal to apply it during a build. This
+   is the approach we take, since it prevents us having to reimplement things.
+
+One disadvantage to writing GHC plugins is that they're currently limited to
+using GHC's "Core" intermediate language. This is a slightly simplified version
+of Haskell, so the ASTs we get don't correspond exactly to the Haskell code
+written in our .hs files. There are proposals to add "source plugins" to GHC,
+but for now Core is often "close enough" to be useful.
+
+## Usage ##
+
+It is highly recommended that you use this plugin with the Nix package manager.
+Running this plugin during the build of a Haskell project requires a Haskell
+package database containing all of that project's dependencies *and* this
+plugin. We provide shell scripts which will sort this out automatically, using
+Nix to obtain the dependencies and keep them isolated from the standard package
+databases.
+
+These shell scripts are described below. They're pretty simple, so you can adapt
+the code to your needs if necessary.
+
+### dump-package.sh ###
+
+Run this from within a Cabal project directory. It will take the project's name
+from the .cabal file and start a Nix shell, depending on the package itself (and
+hence, by transitivity, all of its dependencies) and this AstPlugin package. In
+the resulting shell, it will call `cabal build` with the AstPlugin enabled,
+using the newly-created package database containing the dependencies of both.
+
+### dump-hackage.sh ###
+
+This will pass its arguments to `cabal get`, in order to download Haskell source
+code straight from Hackage. These are stored in a temporary directory, the
+`dump-package.sh` script is called on the package, then it's deleted.
+
+## Troubleshooting ##
+
+This package is currently not very portable. Here's some advice for getting it
+working:
+
+The `nix-shell` call uses a custom Nix function to build the environment. You
+must define this somewhere, eg. in the `packageOverrides` inside
+`~/.nixpkgs/config.nix`:
+
+```
+ghcWithPlugin = name:
+  runCommand "dummy" {
+    buildInputs = [
+      (haskellPackages.ghcWithPackages (hsPkgs: [
+        hsPkgs.${name}
+        astplugin
+      ]))
+    ];
+  } "";
+```
+
+This also assumes the existence of an `astplugin` package, containing this
+project. The easiest way to define such a package is to point it directly at the
+directory you've downloaded it to; that way, any changes you make will be picked
+up automatically. For example, add something like this to your
+`packageOverrides` in `~/.nixpkgs/config.nix`:
+
+```
+astplugin = haskellPackages.callPackage
+              /home/somebody/Downloads/AstPlugin {};
+```
+
+Notice that `ghcWithPlugin` takes in the package name (`name`) and looks it up
+in the set of available Haskell packages (`hsPkgs.${name}`). This means we can
+only dump ASTs from Haskell packages which are available to Nix. There are a few
+ways around this, for example we can change the definition of `ghcWithPlugin` or
+we can override the definition of `haskellPackages`.
