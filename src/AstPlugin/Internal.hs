@@ -1,6 +1,7 @@
 module AstPlugin.Internal where
 import GhcPlugins
 import HS2AST.Sexpr
+import HS2AST.Types
 
 plugin :: Plugin
 plugin = defaultPlugin {
@@ -14,28 +15,45 @@ install _ todo = do
 
 pass :: ModGuts -> CoreM ModGuts
 pass guts = do dflags <- getDynFlags
-               bindsOnlyPass (mapM (printBind dflags)) guts
+               let mod     = mg_module guts
+                   pkg     = modulePackageKey mod
+                   modName = moduleName       mod
+                   printer = printBind dflags pkg modName
+               bindsOnlyPass (mapM printer) guts
 
-printBind :: DynFlags -> CoreBind -> CoreM CoreBind
-printBind dflags bndr@(NonRec name expr) = do
-  printExpr dflags "Non-recursive" (name, expr)
+printBind :: DynFlags -> PackageKey -> ModuleName -> CoreBind -> CoreM CoreBind
+printBind dflags pkg mod bndr = do
+  case bndr of
+       NonRec name expr ->       printer (name, expr)
+       Rec bs           -> mapM_ printer  bs
   return bndr
-printBind dflags bndr@(Rec bs) = do
-  mapM (printExpr dflags "Recursive") bs
-  return bndr
+  where printer = printExpr dflags pkg mod
 
-printExpr :: DynFlags -> String -> (CoreBndr, Expr CoreBndr) -> CoreM ()
-printExpr dflags str (name, expr) = do
+printExpr :: DynFlags
+          -> PackageKey
+          -> ModuleName
+          -> (CoreBndr, Expr CoreBndr)
+          -> CoreM ()
+printExpr dflags pkg mod (name, expr) = do
   case simpleAst expr of
        Nothing  -> return ()
-       Just ast -> putMsgS $ concat [
-         "FOUNDAST ",
-         showSDoc dflags (ppr name),
-         " ",
-         show ast]
+       Just ast -> putMsgS . show $ mkExpr (pprint pkg)
+                                           (pprint mod)
+                                           (pprint name)
+                                           ast
   return ()
+  where pprint :: Outputable a => a -> String
+        pprint = showSDoc dflags . ppr
+
+mkExpr pkg mod name ast =
+  Node [
+      Node [
+          Leaf sentinel
+        , Leaf pkg
+        , Leaf mod
+        , Leaf name
+        ]
+    , ast
+    ]
 
 sentinel = "FOUNDAST"
-
-format pkg mod name ast =
-  concat [sentinel, " ", pkg, ":", mod, ".", name, " ", ast]
