@@ -7,27 +7,6 @@ import GhcPlugins
 import HS2AST.Sexpr
 import HS2AST.Types
 
-type OPkg  = String
-type OMod  = String
-type OName = String
-data Out   = Out {
-    outPackage :: String
-  , outModule  :: String
-  , outName    :: String
-  , outAst     :: AST
-  }
-
-instance ToJSON Out where
-  toJSON o = object [
-      "package" .=       outPackage o
-    , "module"  .=       outModule  o
-    , "name"    .=       outName    o
-    , "ast"     .= show (outAst     o)
-    ]
-
-instance Show Out where
-  show = toString . encode . toJSON
-
 plugin :: Plugin
 plugin = defaultPlugin {
     installCoreToDos = install
