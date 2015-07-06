@@ -1,7 +1,32 @@
+{-# LANGUAGE OverloadedStrings #-}
 module AstPlugin.Internal where
+
+import Data.Aeson
+import Data.Stringable
 import GhcPlugins
 import HS2AST.Sexpr
 import HS2AST.Types
+
+type OPkg  = String
+type OMod  = String
+type OName = String
+data Out   = Out {
+    outPackage :: String
+  , outModule  :: String
+  , outName    :: String
+  , outAst     :: AST
+  }
+
+instance ToJSON Out where
+  toJSON o = object [
+      "package" .=       outPackage o
+    , "module"  .=       outModule  o
+    , "name"    .=       outName    o
+    , "ast"     .= show (outAst     o)
+    ]
+
+instance Show Out where
+  show = toString . encode . toJSON
 
 plugin :: Plugin
 plugin = defaultPlugin {
@@ -37,23 +62,12 @@ printExpr :: DynFlags
 printExpr dflags pkg mod (name, expr) = do
   case simpleAst expr of
        Nothing  -> return ()
-       Just ast -> putMsgS . show $ mkExpr (pprint pkg)
-                                           (pprint mod)
-                                           (pprint name)
-                                           ast
+       Just ast -> putMsgS . show $ Out {
+           outPackage = pprint pkg
+         , outModule  = pprint mod
+         , outName    = pprint name
+         , outAst     = ast
+         }
   return ()
   where pprint :: Outputable a => a -> String
         pprint = showSDoc dflags . ppr
-
-mkExpr pkg mod name ast =
-  Node [
-      Node [
-          Leaf sentinel
-        , Leaf pkg
-        , Leaf mod
-        , Leaf name
-        ]
-    , ast
-    ]
-
-sentinel = "FOUNDAST"

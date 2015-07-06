@@ -24,6 +24,8 @@ library
   build-depends:       base >=4.8 && <4.9
                      , ghc
                      , HS2AST
+                     , aeson
+                     , stringable
   hs-source-dirs:      src
   default-language:    Haskell2010
 
@@ -35,6 +37,8 @@ test-suite pure
   build-depends:       base >= 4.7
                      , AstPlugin
                      , HS2AST
+                     , aeson
+                     , stringable
                      , QuickCheck
                      , tasty >= 0.7
                      , tasty-quickcheck
