@@ -39,14 +39,12 @@ printExpr :: DynFlags
           -> (CoreBndr, Expr CoreBndr)
           -> CoreM ()
 printExpr dflags pkg mod (name, expr) = do
-  case simpleAst expr of
-       Nothing  -> return ()
-       Just ast -> putMsgS . show $ Out {
-           outPackage = pprint pkg
-         , outModule  = pprint mod
-         , outName    = pprint name
-         , outAst     = ast
-         }
+  putMsgS . show $ Out {
+      outPackage = pprint pkg
+    , outModule  = pprint mod
+    , outName    = pprint name
+    , outAst     = toSexp expr
+    }
   return ()
   where pprint :: Outputable a => a -> String
         pprint = showSDoc dflags . ppr
