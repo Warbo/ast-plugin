@@ -5,8 +5,8 @@ mkDerivation {
   pname = "AstPlugin";
   version = "0.1.0.0";
   src = ./.;
-  buildDepends = [ aeson base ghc HS2AST stringable ];
-  testDepends = [
+  libraryHaskellDepends = [ aeson base ghc HS2AST stringable ];
+  testHaskellDepends = [
     aeson base HS2AST QuickCheck stringable tasty tasty-quickcheck
   ];
   homepage = "http://chriswarbo.net/git/ast-plugin";

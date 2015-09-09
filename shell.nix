@@ -1,4 +1,4 @@
-{ nixpkgs ? import <nixpkgs> {}, compiler ? "ghc7102" }:
+{ nixpkgs ? import <nixpkgs> {}, compiler ? "default" }:
 
 let
 
@@ -11,8 +11,8 @@ let
         pname = "AstPlugin";
         version = "0.1.0.0";
         src = ./.;
-        buildDepends = [ aeson base ghc HS2AST stringable ];
-        testDepends = [
+        libraryHaskellDepends = [ aeson base ghc HS2AST stringable ];
+        testHaskellDepends = [
           aeson base HS2AST QuickCheck stringable tasty tasty-quickcheck
         ];
         homepage = "http://chriswarbo.net/git/ast-plugin";
@@ -20,7 +20,11 @@ let
         license = stdenv.lib.licenses.publicDomain;
       };
 
-  drv = pkgs.haskell.packages.${compiler}.callPackage f {};
+  haskellPackages = if compiler == "default"
+                      then pkgs.haskellPackages
+                      else pkgs.haskell.packages.${compiler};
+
+  drv = haskellPackages.callPackage f {};
 
 in
 
