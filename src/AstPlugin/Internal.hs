@@ -43,8 +43,12 @@ printExpr dflags pkg mod (name, expr) = do
       outPackage = pprint pkg
     , outModule  = pprint mod
     , outName    = pprint name
-    , outAst     = toSexp expr
+    , outAst     = toSexp (pkgDb dflags) expr
     }
   return ()
   where pprint :: Outputable a => a -> String
         pprint = showSDoc dflags . ppr
+
+pkgDb :: DynFlags -> PackageDb
+pkgDb dflags key = do cfg <- lookupPackage dflags key
+                      return (packageName cfg)
