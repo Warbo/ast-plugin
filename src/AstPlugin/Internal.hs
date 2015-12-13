@@ -40,7 +40,7 @@ printExpr :: DynFlags
           -> CoreM ()
 printExpr dflags pkg mod (name, expr) = do
   putMsgS . show $ Out {
-      outPackage = pprint pkg
+      outPackage = if isMain then "main" else pprint pkg
     , outModule  = pprint mod
     , outName    = pprint name
     , outAst     = toSexp (pkgDb dflags) expr
@@ -48,7 +48,7 @@ printExpr dflags pkg mod (name, expr) = do
   return ()
   where pprint :: Outputable a => a -> String
         pprint = showSDoc dflags . ppr
+        isMain = packageKeyString pkg == "main"
 
 pkgDb :: DynFlags -> PackageDb
-pkgDb dflags key = do cfg <- lookupPackage dflags key
-                      return (packageName cfg)
+pkgDb dflags = fmap PackageName . fmap mkFastString . packageKeyPackageIdString dflags
