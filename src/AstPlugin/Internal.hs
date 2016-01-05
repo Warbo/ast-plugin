@@ -51,4 +51,4 @@ printExpr dflags pkg mod (name, expr) = do
         isMain = packageKeyString pkg == "main"
 
 pkgDb :: DynFlags -> PackageDb
-pkgDb dflags = fmap PackageName . fmap mkFastString . packageKeyPackageIdString dflags
+pkgDb dflags = fmap (PackageName . mkFastString) . packageKeyPackageIdString dflags
