@@ -8,6 +8,22 @@ SOURCE=$(readlink -f "$REL")
 
 echo "Using '$SOURCE/default.nix'"
 
+function pkgs {
+    echo "list-extras"
+    return 0
+    cat <<EOF
+text
+vector
+aeson
+Cabal
+attoparsec
+pandoc
+lens
+http-conduit
+http-client
+EOF
+}
+
 function testPkg {
 
 read -r -d '' ENV <<EOF
@@ -42,7 +58,7 @@ EOF
   }
 }
 
-for PKG in text vector aeson Cabal warp attoparsec pandoc lens http-conduit http-client
+while read -r PKG
 do
     DIR=$(mktemp -d "/tmp/astplugin-testXXXXXX")
     cd "$DIR"
@@ -54,7 +70,7 @@ do
     done
     cd /tmp
     rm -rf "$DIR"
-done
+done < <(pkgs)
 
 [[ "$ERR" -eq 0 ]] || echo "Errors were encountered" >> /dev/stderr
 exit "$ERR"
