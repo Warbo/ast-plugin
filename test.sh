@@ -93,7 +93,7 @@ function inShellFor {
 
 function pkgTestEnv {
     inShellFor "$1" true ||
-        fail "Problem running command in '$1' environment:\n$(envFor $1)"
+        fail "Problem running command in '$1' environment:\n$(envFor "$1")"
 }
 
 function pkgTestConfigure {
@@ -106,10 +106,7 @@ function pkgTestExtract {
 }
 
 function pkgTestHaveAsts {
-    cat stdout stderr | grep "^{" > /dev/null || {
-        echo "No ASTs found for $PKG"
-        ERR=1
-    }
+    cat stdout stderr | grep "^{" > /dev/null || fail "No ASTs found for $PKG"
 }
 
 # Test functions
