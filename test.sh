@@ -58,13 +58,34 @@ function envFor {
     # building Haskell package $1
     cat <<EOF
 with import <nixpkgs> {};
+with builtins;
 
-runCommand "dummy" {
+let astPlugin = runCommand "cabal2nix-ast-plugin"
+                           { buildInputs = [ haskellPackages.cabal2nix ]; }
+                           ''set -e
+                             if [[ -d "$SOURCE" ]]
+                             then
+                               echo "Found '$SOURCE'" 1>&2
+                             else
+                               echo "Couldn't find '$SOURCE'" 1>&2
+                               exit 2
+                             fi
+
+                             if command -v cabal2nix > /dev/null
+                             then
+                               echo "Found cabal2nix" 1>&2
+                             else
+                               echo "Couldn't find cabal2nix" 1>&2
+                               exit 3
+                             fi
+
+                             cabal2nix --shell "$SOURCE" > "\$out"'';
+in runCommand "dummy" {
   buildInputs = [
     haskellPackages.cabal-install
     (haskellPackages.ghcWithPackages (hsPkgs: [
       hsPkgs.$1
-      (hsPkgs.callPackage (import $SOURCE/default.nix) {})
+      (hsPkgs.callPackage "\${astPlugin}" {})
     ]))
   ];
 } ""
@@ -86,7 +107,7 @@ EOF
 
 function inShellFor {
     # Run command $2 in a shell set up for package $1
-    nix-shell --show-trace -E "$(envFor "$1")" --run "$2"
+    nix-shell --pure --show-trace -E "$(envFor "$1")" --run "$2"
 }
 
 # Test functions which require a package as argument
