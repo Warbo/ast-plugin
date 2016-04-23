@@ -61,11 +61,16 @@ let source    = ./.;
         cabal --ghc-options="$OPTIONS" -v build \
               1> >(tee stdout | grep -v '^{')     \
               2> >(tee stderr | grep -v '^{')
+
+        echo "ASTs are:" 1>&2
+        cat stdout 1>&2
+        cat stderr 1>&2
+
         echo "true" > "$out"
       '')
     ];
     result   = pkg: cmd: parse (unsafeDiscardStringContext (readFile "${envFor pkg cmd}"));
     checkPkg = pkg: all (x: x) (testPkg pkg);
-    pkgNames = [ "list-extras" ];
+    pkgNames = [ "list-extras" "text" ];
     parse    = s: addErrorContext "Trying to parse '${s}'" (fromJSON s);
 in assert (all checkPkg pkgNames); true

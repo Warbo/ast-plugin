@@ -1,11 +1,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 module AstPlugin.Internal where
 
+import ConLike
 import Data.Aeson
 import Data.Stringable
 import GhcPlugins
 import HS2AST.Sexpr
 import HS2AST.Types
+import HscTypes
+import Outputable
 
 plugin :: Plugin
 plugin = defaultPlugin {
@@ -23,7 +26,19 @@ pass guts = do dflags <- getDynFlags
                    pkg     = modulePackageKey mod
                    modName = moduleName       mod
                    printer = printBind dflags pkg modName
+                   types   = mg_tcs guts
+                   tyDecs  = foldr procTyCon [] types
+               liftIO $ mapM printTy tyDecs
                bindsOnlyPass (mapM printer) guts
+
+printTy n = putStrLn (showSDocUnsafe (ppr n))
+
+procTyCon tc tys = map formatDataCon (tyConDataCons tc) ++ tys
+
+formatDataCon = dataConName
+
+procType (AConLike (RealDataCon dc)) tys = dataConName dc : tys
+procType _                           tys = tys
 
 printBind :: DynFlags -> PackageKey -> ModuleName -> CoreBind -> CoreM CoreBind
 printBind dflags pkg mod bndr = do
