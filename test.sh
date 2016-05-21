@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -x
 
 # Make sure we can extract ASTs for the top 10 Hackage packages
 
@@ -79,13 +80,15 @@ let astPlugin = runCommand "cabal2nix-ast-plugin"
                                exit 3
                              fi
 
-                             cabal2nix --shell "$SOURCE" > "\$out"'';
+                             cabal2nix "$SOURCE" > "\$out"'';
 in runCommand "dummy" {
   buildInputs = [
     haskellPackages.cabal-install
     (haskellPackages.ghcWithPackages (hsPkgs: [
       hsPkgs.$1
-      (hsPkgs.callPackage "\${astPlugin}" {})
+      (hsPkgs.callPackage (trace "astPlugin \${astPlugin}"
+                                 "\${astPlugin}")
+                          {})
     ]))
   ];
 } ""
