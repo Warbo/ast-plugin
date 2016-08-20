@@ -1,11 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 module AstPlugin.Internal where
 
-import Data.Aeson
-import Data.Stringable
-import GhcPlugins
-import HS2AST.Sexpr
-import HS2AST.Types
+import           Data.Aeson
+import           Data.Stringable
+import qualified Data.Text       as T
+import           GhcPlugins
+import           HS2AST.Sexpr
+import           HS2AST.Types
 
 plugin :: Plugin
 plugin = defaultPlugin {
@@ -40,9 +41,9 @@ printExpr :: DynFlags
           -> CoreM ()
 printExpr dflags pkg mod (name, expr) = do
   putMsgS . show $ Out {
-      outPackage = if isMain then "main" else pprint pkg
-    , outModule  = pprint mod
-    , outName    = pprint name
+      outPackage = if isMain then "main" else T.pack (pprint pkg)
+    , outModule  = T.pack (pprint mod)
+    , outName    = T.pack (pprint name)
     , outAst     = toSexp (pkgDb dflags) expr
     }
   return ()
