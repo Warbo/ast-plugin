@@ -47,25 +47,31 @@ let astPlugin = runCommand "cabal2nix-ast-plugin"
     cmd = name: ''
       set -x
       set -e
+      CODE=0
       export HOME="$PWD"
       GHC_PKG=$(ghc-pkg list | head -n 1 | tr -d ':')
       OPTIONS="-package-db=$GHC_PKG -package AstPlugin -fplugin=AstPlugin.Plugin"
-      cabal --ghc-options="$OPTIONS" -v build 1> stdout 2> stderr
+      cabal --ghc-options="$OPTIONS" -v build 1> stdout 2> >(tee stderr >&2) || CODE=1
       cat stdout stderr | grep -c "^{"
+      exit "$CODE"
     '';
 
-    pkgTests = name: mapAttrs (tst: script:
-                                runCommand "pkgTest-${tst}" (env name) ''
-                                  set -e
-                                  mkdir scratch
-                                  pushd scratch
-                                  export HOME="$PWD"
-                                  cabal update
-                                  cabal get "${name}"
-                                  pushd ${name}*
-                                  ${script}
-                                  touch "$out"
-                                '') {
+    pkgTests = name:
+      let src = if haskellPackages."${name}" ? src
+                   then ''tar xf "${haskellPackages.${name}.src}"''
+                   else ''cabal get "${name}"'';
+      in mapAttrs (tst: script:
+                    runCommand "pkgTest-${tst}" (env name) ''
+                      set -e
+                      mkdir scratch
+                      pushd scratch
+                      export HOME="$PWD"
+                      cabal update
+                      ${src}
+                      pushd ${name}*
+                      ${script}
+                      touch "$out"
+                    '') {
       env      = ''true'';
       config   = ''cabal update && cabal configure'';
       extract  = cmd name;
