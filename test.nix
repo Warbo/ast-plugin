@@ -59,28 +59,28 @@ with rec {
   '';
 
   pkgTests = name:
-    let src = if haskellPackages."${name}" ? src
-                 then ''tar xf "${haskellPackages.${name}.src}"''
-                 else ''cabal get "${name}"'';
-    in mapAttrs (tst: script:
-                  runCommand "pkgTest-${tst}" (env name) ''
-                    set -e
-                    mkdir scratch
-                    pushd scratch
-                    export HOME="$PWD"
-                    cabal update
-                    ${src}
-                    pushd ${name}*
-                    ${script}
-                    touch "$out"
-                  '') {
-    env      = ''true'';
-    config   = ''cabal update && cabal configure'';
-    extract  = cmd name;
-  };
+    with {
+      src = if haskellPackages."${name}" ? src
+               then ''tar xf "${haskellPackages.${name}.src}"''
+               else ''cabal get "${name}"'';
+    };
+    mapAttrs (tst: script: runCommand "pkgTest-${tst}" (env name) ''
+               mkdir scratch
+               cd scratch
+               export HOME="$PWD"
+               cabal update
+               ${src}
+               cd ${name}*
+               ${script}
+               touch "$out"
+             '')
+             {
+               env      = ''true'';
+               config   = ''cabal update && cabal configure'';
+               extract  = cmd name;
+             };
 
-  pkgs = [ "list-extras" "text" "vector" "Cabal" "attoparsec"
-           "http-client" ];
+  pkgs  = [ "list-extras" "text" "vector" "Cabal" "attoparsec" "http-client" ];
   tests = concatMap (name: attrValues (pkgTests name)) pkgs;
 };
 runCommand "dummy" { src = ./.; buildInputs = tests; } ''touch "$out"''
