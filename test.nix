@@ -1,5 +1,9 @@
-with import <nixpkgs> {};
 with builtins;
+with import ((import <nixpkgs> { config = {}; }).fetchgit {
+  url    = http://chriswarbo.net/git/nix-config.git;
+  rev    = "ce03e5e";
+  sha256 = "1qg4ihf5w7xzsk1cdba7kzdl34jmdzvaf7vr6x0r86zgxn0zc5yj";
+}) {};
 with lib;
 with rec {
   astPlugin = runCommand "cabal2nix-ast-plugin"
