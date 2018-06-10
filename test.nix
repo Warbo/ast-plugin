@@ -87,4 +87,4 @@ with rec {
   pkgs  = [ "list-extras" "text" "vector" "Cabal" "attoparsec" "http-client" ];
   tests = concatMap (name: attrValues (pkgTests name)) pkgs;
 };
-runCommand "dummy" { src = ./.; buildInputs = tests; } ''touch "$out"''
+withDeps tests (dummyBuild "astplugin-tests")
