@@ -6,40 +6,10 @@ with import ((import <nixpkgs> { config = {}; }).fetchgit {
 }) {};
 with lib;
 with rec {
-  astPlugin = runCommand "cabal2nix-ast-plugin"
-    {
-      buildInputs = [ haskellPackages.cabal2nix ];
-      SOURCE      = ./.;
-      NIX_REMOTE  = "daemon";
-      NIX_PATH    = builtins.getEnv "NIX_PATH";
-    }
-    ''
-      if [[ -d "$SOURCE" ]]
-      then
-        echo "Found '$SOURCE'" 1>&2
-      else
-        echo "Couldn't find '$SOURCE'" 1>&2
-        exit 2
-      fi
-
-      if command -v cabal2nix > /dev/null
-      then
-        echo "Found cabal2nix" 1>&2
-      else
-        echo "Couldn't find cabal2nix" 1>&2
-        exit 3
-      fi
-
-      cp -r "$SOURCE" ./AstPlugin
-      chmod -R +w ./AstPlugin
-      rm -rf ./AstPlugin/dist
-
-      pushd ./AstPlugin > /dev/null
-        cabal2nix ./. > default.nix
-      popd > /dev/null
-
-      cp -r ./AstPlugin "$out"
-    '';
+  astPlugin = runCabal2nix {
+    name = "AstPlugin";
+    url  = ./.;
+  };
   get = name: "cabal get ${name}";
   env = name: {
                 buildInputs = [
