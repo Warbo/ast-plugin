@@ -6,17 +6,16 @@ with import ((import <nixpkgs> { config = {}; }).fetchgit {
 }) {};
 with lib;
 with rec {
-  astPlugin = runCabal2nix {
+  astPlugin = import (runCabal2nix {
     name = "AstPlugin";
     url  = ./.;
-  };
-  get = name: "cabal get ${name}";
+  });
   env = name: {
                 buildInputs = [
                   (haskellPackages.ghcWithPackages (hsPkgs: [
                     hsPkgs.cabal-install
-                    hsPkgs."${name}"
-                    (hsPkgs.callPackage "${astPlugin}" {})
+                    (getAttr name hsPkgs)
+                    (hsPkgs.callPackage astPlugin {})
                   ]))
                 ];
               };
