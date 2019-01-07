@@ -1,9 +1,23 @@
 with builtins;
-with import ((import <nixpkgs> { config = {}; }).fetchgit {
-  url    = http://chriswarbo.net/git/nix-config.git;
-  rev    = "ce03e5e";
-  sha256 = "1qg4ihf5w7xzsk1cdba7kzdl34jmdzvaf7vr6x0r86zgxn0zc5yj";
-}) {};
+with rec {
+  pinnedSrc = fetchTarball {
+    name   = "nixpkgs1709";
+    url    = https://github.com/NixOS/nixpkgs/archive/17.09.tar.gz;
+    sha256 = "0kpx4h9p1lhjbn1gsil111swa62hmjs9g93xmsavfiki910s73sh";
+  };
+
+  pinned = import pinnedSrc { config = {}; overlays = []; };
+
+  nix-helpers = pinned.fetchgit {
+    url    = http://chriswarbo.net/git/nix-helpers.git;
+    rev    = "148bd5e";
+    sha256 = "0wywgdmv4gllarayhwf9p41pzrkvgs32shqrycv2yjkwz321w8wl";
+  };
+};
+with import "${pinnedSrc}" {
+  config   = {};
+  overlays = [ (import "${nix-helpers}/overlay.nix") ];
+};
 with lib;
 with rec {
   astPlugin = import (runCabal2nix {
