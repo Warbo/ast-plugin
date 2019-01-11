@@ -27,15 +27,7 @@ with rec {
                               ]))
                               ./.;
         }) {};
-/*
-        attoparsec = self.callHackage "attoparsec" "0.13.0.1" {
-          mkDerivation = args: self.mkDerivation
-            (removeAttrs args [ "benchmarkHaskellDepends" ] // {
-            libraryHaskellDepends = args.libraryHaskellDepends ++
-            args.benchmarkHaskellDepends;
-            });
-        };
-*/
+
         HS2AST = self.callPackage (self.haskellSrc2nix {
           name = "HS2AST";
           src  = fetchgit {
@@ -44,9 +36,6 @@ with rec {
             sha256 = "1jg62a71mlnm0k2sjbjhf3n5q2c4snlbaj5dlrhdg44kxiyilx9x";
           };
         }) {};
-
-        #tasty      = self.callHackage "tasty" "0.11.2.1" {};
-        #text       = self.callHackage "text"  "1.2.2.1"  {};
       };
     });
 };
