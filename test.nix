@@ -32,7 +32,8 @@ with rec {
           rm -f "$HOME/.cabal/packages/hackage.haskell.org/hackage-security-lock" ||
             true
 
-          cp -r "${haskellSrc pkgName version}" ./src
+          tar xf "${haskellSrc pkgName version}"
+          mv "${pkgName}-${version}" ./src
           chmod 777 -R ./src
           cd ./src
           CODE=0
@@ -65,7 +66,7 @@ with rec {
         echo "Stderr of cabal new-build" 1>&2
         grep -v "^{" < stderr 1>&2
         echo "Extracted output written to '$out'" 1>&2
-        grep '^{' < stderr > "$out"
+        grep '^{' < stderr > "$out" || exit 1
       '';
     };
     extractTest;
